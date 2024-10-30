@@ -3,17 +3,25 @@ package coordinate
 import (
 	"os"
 	"testing"
+
+	"6.5840/mr/data"
+	"6.5840/mr/util"
 )
 
+func randomTaskId() string {
+	id, _ := data.Default().IdGenerate()
+	return "test" + util.I64ToString(id)
+}
+
 func TestMerge(t *testing.T) {
-	_, err := merge([]string{"demo.txt", "mr-merge-temp-1730274037"})
+	_, err := merge([]string{"demo.txt", "demo2.txt"}, randomTaskId())
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func TestMergeAndSplit(t *testing.T) {
-	se, err := NewSplitExecutor([]string{"demo.txt", "demo2.txt"}, 50)
+func TestPrivateIterate(t *testing.T) {
+	se, err := NewSplitExecutor([]string{"demo.txt", "demo2.txt"}, 50, randomTaskId())
 	if err != nil {
 		t.Error(err)
 	}
@@ -39,6 +47,20 @@ func TestMergeAndSplit(t *testing.T) {
 		contents, err = se.iterate()
 		if err != nil {
 			t.Error(err)
+		}
+	}
+}
+
+func TestIterate(t *testing.T) {
+	se, _ := NewSplitExecutor([]string{"demo.txt", "demo2.txt"}, 50, randomTaskId())
+	next, err := se.Iterate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for next {
+		next, err = se.Iterate()
+		if err != nil {
+			t.Fatal(err)
 		}
 	}
 }

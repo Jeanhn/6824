@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"reflect"
 	"unsafe"
 )
 
@@ -66,4 +67,22 @@ func RemoveTempFiles() error {
 		}
 	}
 	return nil
+}
+
+func BytesToString(byts []byte) string {
+	bh := *(*reflect.SliceHeader)(unsafe.Pointer(&byts))
+	sh := reflect.StringHeader{
+		Data: bh.Data,
+		Len:  bh.Len,
+	}
+	return *(*string)(unsafe.Pointer(&sh))
+}
+
+func StringToBytes(s string) []byte {
+	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := reflect.SliceHeader{
+		Data: sh.Data,
+		Len:  sh.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&bh))
 }

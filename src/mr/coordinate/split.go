@@ -2,6 +2,7 @@ package coordinate
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 
 	"6.5840/mr/data"
@@ -15,7 +16,7 @@ const (
 
 	MergeTempPrefix = "mr-merge-temp-"
 
-	SplitTempPrefix = "mr-split-temp-"
+	SplitTempFormat = "mr-split-temp-task%v-shard%v"
 
 	SplitCounterNamePrefix = "mr-split-counter-"
 )
@@ -24,10 +25,10 @@ type SplitExecutor struct {
 	mergeFile *os.File
 	sc        *bufio.Scanner
 	blockSize int
-	id        int
+	taskId    string
 }
 
-func merge(files []string) (string, error) {
+func merge(files []string, taskId string) (string, error) {
 	id, err := data.Default().IdGenerate()
 	if err != nil {
 		return "", err
@@ -60,8 +61,12 @@ func merge(files []string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			line := sc.Text()
-			_, err = wr.WriteString(line + "\r\n")
+			line := sc.Bytes()
+			_, err = wr.Write(line)
+			if err != nil {
+				return "", err
+			}
+			_, err = wr.WriteString("\r\n")
 			if err != nil {
 				return "", err
 			}
@@ -82,8 +87,8 @@ func merge(files []string) (string, error) {
 	return name, nil
 }
 
-func NewSplitExecutor(files []string, blockSize int) (*SplitExecutor, error) {
-	mergeFile, err := merge(files)
+func NewSplitExecutor(files []string, blockSize int, taskId string) (*SplitExecutor, error) {
+	mergeFile, err := merge(files, taskId)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +105,7 @@ func NewSplitExecutor(files []string, blockSize int) (*SplitExecutor, error) {
 		mergeFile: mf,
 		blockSize: blockSize,
 		sc:        sc,
+		taskId:    taskId,
 	}
 	return &se, nil
 }
@@ -119,9 +125,10 @@ func (se *SplitExecutor) iterate() ([]string, error) {
 			return nil, err
 		}
 
-		line := se.sc.Text()
+		line := se.sc.Bytes()
+		line = append(line, "\r\n"...)
 		cacheSize += len(line)
-		cache = append(cache, line)
+		cache = append(cache, util.BytesToString(line))
 
 		if cacheSize > se.blockSize {
 			break
@@ -138,7 +145,7 @@ func (se *SplitExecutor) iterate() ([]string, error) {
 	return cache, nil
 }
 
-func (se *SplitExecutor) Iterate(taskId string) (bool, error) {
+func (se *SplitExecutor) Iterate() (bool, error) {
 	text, err := se.iterate()
 	if err != nil {
 		return true, err
@@ -148,5 +155,24 @@ func (se *SplitExecutor) Iterate(taskId string) (bool, error) {
 		return false, nil
 	}
 
-	counterName := SplitCounterNamePrefix + taskId
+	counter := data.DefaultCounter()
+	i, err := counter.Add()
+	if err != nil {
+		return false, err
+	}
+	filename := fmt.Sprintf(SplitTempFormat, se.taskId, i)
+
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return false, err
+	}
+
+	for _, line := range text {
+		_, err = f.WriteString(line)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
 }

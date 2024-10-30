@@ -1,6 +1,8 @@
 package data
 
 import (
+	"errors"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -8,14 +10,16 @@ import (
 type Data interface {
 	IdGenerate() (int64, error)
 	Put(string, interface{}) error
-	Get(string) (interface{}, error)
+	Get(string, interface{}) (error, bool)
+}
+
+var defaultGlobalData Data = &defaultData{
+	database: make(map[string]interface{}),
+	lock:     sync.RWMutex{},
 }
 
 func Default() Data {
-	return &defaultData{
-		database: make(map[string]interface{}),
-		lock:     sync.RWMutex{},
-	}
+	return defaultGlobalData
 }
 
 type defaultData struct {
@@ -34,12 +38,32 @@ func (dd *defaultData) Put(key string, value interface{}) error {
 	return nil
 }
 
-func (dd *defaultData) Get(key string) (interface{}, error) {
+func (dd *defaultData) Get(key string, dest interface{}) (error, bool) {
 	dd.lock.RLock()
 	defer dd.lock.RUnlock()
 	v, ok := dd.database[key]
 	if !ok {
-		return nil, nil
+		return nil, false
 	}
-	return v, nil
+
+	d := reflect.ValueOf(dest)
+	if d.Kind() != reflect.Ptr {
+		return errors.New("dest should be pointer"), false
+	}
+
+	rv := reflect.ValueOf(v)
+	if !rv.Type().AssignableTo(d.Elem().Type()) {
+		return errors.New("not assignable"), false
+	}
+	d.Elem().Set(rv)
+
+	return nil, true
+}
+
+func Lock(name string) error {
+	return nil
+}
+
+func Unlock(name string) error {
+	return nil
 }

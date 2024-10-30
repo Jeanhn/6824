@@ -12,15 +12,17 @@ type defaultCounter struct {
 }
 
 func (dc *defaultCounter) Add() (int, error) {
-	return int(atomic.AddInt64(&dc.i, 1)), nil
+	return int(atomic.AddInt64(&dc.i, 1)) - 1, nil
 }
 
 func (dc *defaultCounter) Get() (int, error) {
 	return int(atomic.LoadInt64(&dc.i)), nil
 }
 
-func NewDefaultCounter() Counter {
-	return &defaultCounter{
-		i: 0,
-	}
+var defaultGlobalCounter Counter = &defaultCounter{
+	i: 0,
+}
+
+func DefaultCounter() Counter {
+	return defaultGlobalCounter
 }
