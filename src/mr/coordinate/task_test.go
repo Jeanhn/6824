@@ -3,7 +3,7 @@ package coordinate
 import "testing"
 
 func TestTaskManager(t *testing.T) {
-	tm, err := NewTaskManager([]string{"1", "2", "3"}, randomTaskId(), 3)
+	tm, err := NewTaskManager([]string{"1", "2", "3"}, randomTaskId(), 3, 2)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -91,7 +91,7 @@ func NewTaskManager(splitFiles []string, taskId string, nWorker, nReduce int) (*
 func getNReduceFileName(projectId string, nReduce int) []string {
 	ret := make([]string, 0, nReduce)
 	for i := 1; i <= nReduce; i++ {
-		name := fmt.Sprintf(MapResultFormat, projectId, i)
+		name := fmt.Sprintf(ReduceResultFormat, projectId, i)
 		ret = append(ret, name)
 	}
 	return ret
