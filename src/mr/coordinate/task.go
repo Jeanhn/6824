@@ -15,7 +15,7 @@ const (
 
 	MapResultFormat = "mr-map-result-task%v-id%v-shard%v"
 
-	ReduceResultFormat = "mr-reduce-result-task%v-shard%v"
+	ReduceResultFormat = "mr-out-%v"
 )
 
 type Task struct {
@@ -55,6 +55,7 @@ type TaskManager struct {
 	waitMap   map[int64]Task
 	doneQueue []Task
 	lock      sync.Mutex
+	nReduce   int
 }
 
 func NewTaskManager(splitFiles []string, taskId string, nWorker, nReduce int) (*TaskManager, error) {
@@ -87,39 +88,36 @@ func NewTaskManager(splitFiles []string, taskId string, nWorker, nReduce int) (*
 		initQueue: &q,
 		waitMap:   make(map[int64]Task),
 		doneQueue: make([]Task, 0),
+		nReduce:   nReduce,
 	}, nil
 }
 
-func getNReduceFileName(projectId string, nReduce int) []string {
-	ret := make([]string, 0, nReduce)
-	for i := 1; i <= nReduce; i++ {
-		name := fmt.Sprintf(ReduceResultFormat, projectId, i)
-		ret = append(ret, name)
-	}
-	return ret
-}
-
-func newReduceTask(task Task) ([]Task, error) {
-	if task.Type != MAP_TASK_TYPE {
-		panic("wrong task type")
+func (tm *TaskManager) initReduceTasks() error {
+	mapFiles := make([][]string, tm.nReduce)
+	for _, doneTask := range tm.doneQueue {
+		if len(doneTask.TargetFiles) != tm.nReduce {
+			return errors.New("wrong mapped result count")
+		}
+		for i := 0; i < tm.nReduce; i++ {
+			mapFiles[i] = append(mapFiles[i], doneTask.TargetFiles[i])
+		}
 	}
 
-	ret := make([]Task, 0)
-	for _, shard := range task.TargetFiles {
+	for idx, group := range mapFiles {
 		id, err := data.Default().IdGenerate()
 		if err != nil {
-			return nil, err
+			return err
 		}
-		t := Task{
+		task := Task{
 			Id:          id,
-			ProjectId:   task.ProjectId,
+			ProjectId:   tm.taskId,
+			InputFiles:  group,
 			Type:        REDUCE_TASK_TYPE,
-			InputFiles:  []string{shard},
-			TargetFiles: getNReduceFileName(task.ProjectId, len(task.TargetFiles)),
+			TargetFiles: []string{fmt.Sprintf(ReduceResultFormat, idx)},
 		}
-		ret = append(ret, t)
+		tm.initQueue.Push(task)
 	}
-	return ret, nil
+	return nil
 }
 
 func (tm *TaskManager) Finish(id int64) error {
@@ -132,14 +130,8 @@ func (tm *TaskManager) Finish(id int64) error {
 	delete(tm.waitMap, id)
 	tm.doneQueue = append(tm.doneQueue, t)
 
-	if t.Type == MAP_TASK_TYPE {
-		reduceTasks, err := newReduceTask(t)
-		if err != nil {
-			return err
-		}
-		for _, rt := range reduceTasks {
-			tm.initQueue.Push(rt)
-		}
+	if t.Type == MAP_TASK_TYPE && len(tm.waitMap) == 0 && tm.initQueue.Empty() {
+		tm.initReduceTasks()
 	}
 	return nil
 }

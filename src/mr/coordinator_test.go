@@ -2,6 +2,7 @@ package mr
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -15,6 +16,10 @@ func TestMakeAndServe(t *testing.T) {
 
 	wg.Add(1)
 	wg2.Add(16)
+
+	var m, r int32
+	m = 0
+	r = 0
 	for i := 0; i < 16; i++ {
 		go func() {
 			wg.Wait()
@@ -43,6 +48,12 @@ func TestMakeAndServe(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+
+				if acquireReply.task.Type == 1 {
+					atomic.AddInt32(&m, 1)
+				} else {
+					atomic.AddInt32(&r, 1)
+				}
 			}
 			wg2.Done()
 		}()
@@ -50,4 +61,9 @@ func TestMakeAndServe(t *testing.T) {
 
 	wg.Done()
 	wg2.Wait()
+
+	if r != 2 {
+		t.Error(r)
+		t.Fail()
+	}
 }

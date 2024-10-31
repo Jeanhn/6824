@@ -5,6 +5,8 @@ import (
 	"hash/fnv"
 	"log"
 	"net/rpc"
+
+	"6.5840/mr/coordinate"
 )
 
 //
@@ -58,8 +60,8 @@ func CallExample() {
 	// the "Coordinator.Example" tells the
 	// receiving server that we'd like to call
 	// the Example() method of struct Coordinator.
-	ok := call("Coordinator.Example", &args, &reply)
-	if ok {
+	err := call("Coordinator.Example", &args, &reply)
+	if err == nil {
 		// reply.Y should be 100.
 		fmt.Printf("reply.Y %v\n", reply.Y)
 	} else {
@@ -72,7 +74,7 @@ func CallExample() {
 // usually returns true.
 // returns false if something goes wrong.
 //
-func call(rpcname string, args interface{}, reply interface{}) bool {
+func call(rpcname string, args interface{}, reply interface{}) error {
 	// c, err := rpc.DialHTTP("tcp", "127.0.0.1"+":1234")
 	sockname := coordinatorSock()
 	c, err := rpc.DialHTTP("unix", sockname)
@@ -83,9 +85,36 @@ func call(rpcname string, args interface{}, reply interface{}) bool {
 
 	err = c.Call(rpcname, args, reply)
 	if err == nil {
-		return true
+		return nil
 	}
 
 	fmt.Println(err)
-	return false
+	return err
+}
+
+func Acquire(workerId string) (*coordinate.Task, error) {
+	request := AcquireArgs{
+		workerId: workerId,
+	}
+	response := AcquireReply{}
+
+	err := call("Coordinator.Acquire", &request, &response)
+	if err != nil {
+		return nil, err
+	}
+	return response.task, nil
+}
+
+func Finish(workerId string, task coordinate.Task) error {
+	request := FinishArgs{
+		workerId: workerId,
+		task:     task,
+	}
+	response := FinishReply{}
+	err := call("Coordinator.Finish", &request, &response)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
