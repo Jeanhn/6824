@@ -3,6 +3,7 @@ package coordinate
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"6.5840/mr/data"
 	"6.5840/mr/util"
@@ -53,6 +54,7 @@ type TaskManager struct {
 	initQueue *util.Queue
 	waitMap   map[int64]Task
 	doneQueue []Task
+	lock      sync.Mutex
 }
 
 func NewTaskManager(splitFiles []string, taskId string, nWorker, nReduce int) (*TaskManager, error) {
@@ -120,7 +122,9 @@ func newReduceTask(task Task) ([]Task, error) {
 	return ret, nil
 }
 
-func (tm *TaskManager) Done(id int64) error {
+func (tm *TaskManager) Finish(id int64) error {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
 	t, ok := tm.waitMap[id]
 	if !ok {
 		return errors.New("task is not waitting")
@@ -141,6 +145,8 @@ func (tm *TaskManager) Done(id int64) error {
 }
 
 func (tm *TaskManager) Acquire() (*Task, error) {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
 	if tm.initQueue.Empty() {
 		return nil, nil
 	}
@@ -155,6 +161,8 @@ func (tm *TaskManager) Acquire() (*Task, error) {
 }
 
 func (tm *TaskManager) Timeout(id int64) error {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
 	t, ok := tm.waitMap[id]
 	if !ok {
 		return errors.New("task is not waitting")
@@ -164,6 +172,8 @@ func (tm *TaskManager) Timeout(id int64) error {
 	return nil
 }
 
-func (tm *TaskManager) Finish() bool {
+func (tm *TaskManager) Done() bool {
+	tm.lock.Lock()
+	defer tm.lock.Unlock()
 	return tm.initQueue.Empty() && len(tm.waitMap) == 0
 }

@@ -14,7 +14,7 @@ const (
 
 	BufferFlushSize = 128 * 1024
 
-	MergeTempPrefix = "mr-merge-temp-"
+	MergeTempFormat = "mr-merge-temp-task%v-id%v"
 
 	SplitTempFormat = "mr-split-temp-task%v-shard%v"
 
@@ -30,11 +30,7 @@ type SplitExecutor struct {
 }
 
 func merge(files []string, taskId string) (string, error) {
-	id, err := data.Default().IdGenerate()
-	if err != nil {
-		return "", err
-	}
-	name := MergeTempPrefix + util.I64ToString(id)
+	name := fmt.Sprintf(MergeTempFormat, taskId)
 
 	dest, err := os.OpenFile(name, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
@@ -178,4 +174,8 @@ func (se *SplitExecutor) Iterate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (se *SplitExecutor) GetSplitFiles() []string {
+	return se.splitFiles
 }

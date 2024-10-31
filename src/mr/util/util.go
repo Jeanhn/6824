@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"time"
 	"unsafe"
 )
 
@@ -85,4 +86,8 @@ func StringToBytes(s string) []byte {
 		Len:  sh.Len,
 	}
 	return *(*[]byte)(unsafe.Pointer(&bh))
+}
+
+func RandomTaskId() string {
+	return "mr-task-" + I64ToString(time.Now().Unix())
 }

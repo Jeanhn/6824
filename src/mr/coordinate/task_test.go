@@ -36,7 +36,7 @@ func TestTaskManager(t *testing.T) {
 	mapTasks = append(mapTasks, task)
 
 	for i := range mapTasks {
-		err := tm.Done(mapTasks[i].Id)
+		err := tm.Finish(mapTasks[i].Id)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -59,7 +59,7 @@ func TestTaskManager(t *testing.T) {
 	}
 
 	for _, tsk := range reduceTaks {
-		err := tm.Done(tsk.Id)
+		err := tm.Finish(tsk.Id)
 		if err != nil {
 			ids := make([]int, 0)
 			for _, tk := range reduceTaks {
@@ -70,7 +70,7 @@ func TestTaskManager(t *testing.T) {
 		}
 	}
 
-	if !tm.Finish() {
+	if !tm.Done() {
 		t.Fatal("should finish")
 	}
 }
