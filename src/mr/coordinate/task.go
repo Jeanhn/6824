@@ -28,7 +28,7 @@ type Task struct {
 
 func getMappedFileName(projectId string, id int64, nReduce int) []string {
 	ret := make([]string, 0, nReduce)
-	for i := 1; i <= nReduce; i++ {
+	for i := 0; i < nReduce; i++ {
 		name := fmt.Sprintf(MapResultFormat, projectId, id, i)
 		ret = append(ret, name)
 	}

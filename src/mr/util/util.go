@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"hash/fnv"
 	"io"
 	"os"
 	"reflect"
@@ -90,4 +91,10 @@ func StringToBytes(s string) []byte {
 
 func RandomTaskId() string {
 	return "mr-task-" + I64ToString(time.Now().Unix())
+}
+
+func Ihash(key string) int {
+	h := fnv.New32a()
+	h.Write([]byte(key))
+	return int(h.Sum32() & 0x7fffffff)
 }
