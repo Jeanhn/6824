@@ -3,7 +3,7 @@ package coordinate
 import "testing"
 
 func TestTaskManager(t *testing.T) {
-	tm, err := NewTaskManager([]string{"1", "2", "3"}, randomTaskId())
+	tm, err := NewTaskManager([]string{"1", "2", "3"}, randomTaskId(), 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,7 +22,7 @@ func TestTaskManager(t *testing.T) {
 
 	task := temp[2]
 	temp = temp[0:2]
-	tm.Timeout(task.id)
+	tm.Timeout(task.Id)
 
 	task, err = tm.Acquire()
 	if err != nil {
@@ -35,7 +35,7 @@ func TestTaskManager(t *testing.T) {
 	temp = append(temp, task)
 
 	for i := range temp {
-		err := tm.Done(temp[i].id)
+		err := tm.Done(temp[i].Id)
 		if err != nil {
 			t.Fatal(err)
 		}
