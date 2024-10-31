@@ -22,10 +22,11 @@ const (
 )
 
 type SplitExecutor struct {
-	mergeFile *os.File
-	sc        *bufio.Scanner
-	blockSize int
-	taskId    string
+	mergeFile  *os.File
+	sc         *bufio.Scanner
+	blockSize  int
+	taskId     string
+	splitFiles []string
 }
 
 func merge(files []string, taskId string) (string, error) {
@@ -102,10 +103,11 @@ func NewSplitExecutor(files []string, blockSize int, taskId string) (*SplitExecu
 	sc.Split(bufio.ScanLines)
 
 	se := SplitExecutor{
-		mergeFile: mf,
-		blockSize: blockSize,
-		sc:        sc,
-		taskId:    taskId,
+		mergeFile:  mf,
+		blockSize:  blockSize,
+		sc:         sc,
+		taskId:     taskId,
+		splitFiles: make([]string, 0),
 	}
 	return &se, nil
 }
@@ -161,6 +163,7 @@ func (se *SplitExecutor) Iterate() (bool, error) {
 		return false, err
 	}
 	filename := fmt.Sprintf(SplitTempFormat, se.taskId, i)
+	se.splitFiles = append(se.splitFiles, filename)
 
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {

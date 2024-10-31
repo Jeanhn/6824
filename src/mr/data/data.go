@@ -4,7 +4,11 @@ import (
 	"errors"
 	"reflect"
 	"sync"
-	"time"
+	"sync/atomic"
+)
+
+const (
+	IncreaseIdKey = "_increase_id_key_"
 )
 
 type Data interface {
@@ -16,6 +20,7 @@ type Data interface {
 var defaultGlobalData Data = &defaultData{
 	database: make(map[string]interface{}),
 	lock:     sync.RWMutex{},
+	incr:     0,
 }
 
 func Default() Data {
@@ -25,10 +30,12 @@ func Default() Data {
 type defaultData struct {
 	database map[string]interface{}
 	lock     sync.RWMutex
+	incr     int64
 }
 
 func (dd *defaultData) IdGenerate() (int64, error) {
-	return time.Now().Unix(), nil
+	newValue := atomic.AddInt64(&dd.incr, 1)
+	return newValue, nil
 }
 
 func (dd *defaultData) Put(key string, value interface{}) error {
