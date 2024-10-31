@@ -102,13 +102,12 @@ func newReduceTask(task Task) ([]Task, error) {
 		panic("wrong task type")
 	}
 
-	id, err := data.Default().IdGenerate()
-	if err != nil {
-		return nil, err
-	}
-
 	ret := make([]Task, 0)
 	for _, shard := range task.TargetFiles {
+		id, err := data.Default().IdGenerate()
+		if err != nil {
+			return nil, err
+		}
 		t := Task{
 			Id:          id,
 			ProjectId:   task.ProjectId,

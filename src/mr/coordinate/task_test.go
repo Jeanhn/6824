@@ -3,12 +3,13 @@ package coordinate
 import "testing"
 
 func TestTaskManager(t *testing.T) {
+	// 3map task 3*2 reduce task
 	tm, err := NewTaskManager([]string{"1", "2", "3"}, randomTaskId(), 3, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	temp := make([]*Task, 0)
+	mapTasks := make([]*Task, 0)
 	for {
 		task, err := tm.Acquire()
 		if err != nil {
@@ -17,11 +18,11 @@ func TestTaskManager(t *testing.T) {
 		if task == nil {
 			break
 		}
-		temp = append(temp, task)
+		mapTasks = append(mapTasks, task)
 	}
 
-	task := temp[2]
-	temp = temp[0:2]
+	task := mapTasks[2]
+	mapTasks = mapTasks[0:2]
 	tm.Timeout(task.Id)
 
 	task, err = tm.Acquire()
@@ -32,11 +33,39 @@ func TestTaskManager(t *testing.T) {
 		t.Fatal("should have a init which is timout before")
 	}
 
-	temp = append(temp, task)
+	mapTasks = append(mapTasks, task)
 
-	for i := range temp {
-		err := tm.Done(temp[i].Id)
+	for i := range mapTasks {
+		err := tm.Done(mapTasks[i].Id)
 		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	reduceTaks := make([]Task, 0)
+	for {
+		tsk, err := tm.Acquire()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if tsk == nil {
+			break
+		}
+		reduceTaks = append(reduceTaks, *tsk)
+	}
+
+	if len(reduceTaks) != 6 {
+		t.Fatal("wrong reduce num")
+	}
+
+	for _, tsk := range reduceTaks {
+		err := tm.Done(tsk.Id)
+		if err != nil {
+			ids := make([]int, 0)
+			for _, tk := range reduceTaks {
+				ids = append(ids, int(tk.Id))
+			}
+			t.Error(ids)
 			t.Fatal(err)
 		}
 	}
