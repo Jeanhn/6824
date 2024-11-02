@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"6.5840/mr/data"
 	"6.5840/mr/util"
 )
 
@@ -153,11 +152,7 @@ func (se *SplitExecutor) Iterate() (bool, error) {
 		return false, nil
 	}
 
-	counter := data.DefaultCounter()
-	i, err := counter.Add()
-	if err != nil {
-		return false, err
-	}
+	i := util.LocalIncreaseId()
 	filename := fmt.Sprintf(SplitTempFormat, se.taskId, i)
 	se.splitFiles = append(se.splitFiles, filename)
 

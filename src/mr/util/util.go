@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 )
@@ -113,4 +114,11 @@ func UnmarshalKeyAndValue(byts []byte) ([]string, error) {
 		return nil, errors.New("UnmarshalKeyAndValue:wrong src input")
 	}
 	return []string{BytesToString(ans[0]), BytesToString(ans[1])}, nil
+}
+
+var localId int64 = 0
+
+func LocalIncreaseId() int64 {
+	n := atomic.AddInt64(&localId, 1)
+	return n - 1
 }

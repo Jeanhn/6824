@@ -14,7 +14,7 @@ const (
 	SortFileFormat = "mr-sort-file-prefix-id%v"
 )
 
-func SortKeyValueFile(filename string) error {
+func sortKeyValueFile(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -27,11 +27,9 @@ func SortKeyValueFile(filename string) error {
 	kvs := make([]KeyValue, 0)
 	kvSize := 0
 	tempSortedFiles := make([]string, 0)
-	tempIndex := 0
 
 	var allocateAndSort func() error = func() error {
-		tempName := fmt.Sprintf(SortFileFormat, tempIndex)
-		tempIndex++
+		tempName := fmt.Sprintf(SortFileFormat, util.LocalIncreaseId())
 		f, err := os.OpenFile(tempName, os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
 			return err
@@ -91,7 +89,7 @@ func SortKeyValueFile(filename string) error {
 	return nil
 }
 
-func MapHandler(task coordinate.Task, mapf func(string, string) []KeyValue) error {
+func doMapTask(task coordinate.Task, mapf func(string, string) []KeyValue) error {
 	targetFiles := make([]*bufio.Writer, 0)
 	for _, targetFile := range task.TargetFiles {
 		f, err := os.OpenFile(targetFile, os.O_CREATE|os.O_RDWR, 0666)
@@ -103,8 +101,6 @@ func MapHandler(task coordinate.Task, mapf func(string, string) []KeyValue) erro
 		targetFiles = append(targetFiles, wr)
 	}
 
-	mapResult := make([]KeyValue, 0)
-	resultSize := 0
 	for _, filename := range task.InputFiles {
 		f, err := os.Open(filename)
 		if err != nil {
@@ -120,38 +116,40 @@ func MapHandler(task coordinate.Task, mapf func(string, string) []KeyValue) erro
 				return err
 			}
 			byts := sc.Bytes()
-			line := util.BytesToString(byts)
-			kvs := mapf(filename, line)
-			for _, kv := range kvs {
-				resultSize += kv.size()
-			}
-			mapResult = append(mapResult, kvs...)
+			kvs := mapf(filename, util.BytesToString(byts))
 
-			if resultSize > BLOCK_SIZE_LIMIT {
-				for _, kv := range mapResult {
-					kvString := kv.fmt()
-					n := ihash(kv.Key) % len(task.TargetFiles)
-					wr := targetFiles[n]
-					_, err := wr.WriteString(kvString)
+			for _, kv := range kvs {
+				n := ihash(kv.Key) % len(task.TargetFiles)
+				_, err = targetFiles[n].WriteString(kv.fmt())
+				if err != nil {
+					return err
+				}
+				if targetFiles[n].Size() > BLOCK_SIZE_LIMIT {
+					err = targetFiles[n].Flush()
 					if err != nil {
 						return err
 					}
-					if wr.Size() > BLOCK_SIZE_LIMIT {
-						err := wr.Flush()
-						if err != nil {
-							return err
-						}
-					}
 				}
-
-				mapResult = make([]KeyValue, 0)
-				resultSize = 0
 			}
 		}
 	}
 
 	for _, fileWriter := range targetFiles {
 		err := fileWriter.Flush()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func MapHandler(task coordinate.Task, mapf func(string, string) []KeyValue) error {
+	err := doMapTask(task, mapf)
+	if err != nil {
+		return err
+	}
+	for _, filename := range task.TargetFiles {
+		err = sortKeyValueFile(filename)
 		if err != nil {
 			return err
 		}

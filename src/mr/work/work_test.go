@@ -26,15 +26,6 @@ func mapf(filename string, contents string) []KeyValue {
 	return kva
 }
 
-func TestMap(t *testing.T) {
-	task := coordinate.Task{
-		InputFiles:  []string{"/home/jean/6.5840/src/mr/coordinate/demo.txt", "/home/jean/6.5840/src/mr/coordinate/demo2.txt"},
-		TargetFiles: []string{"target1", "target2"},
-	}
-
-	MapHandler(task, mapf)
-}
-
 func TestHeap(t *testing.T) {
 	kvs := make([]KeyValue, 0)
 	kvh := KeyValueHeap(kvs)
@@ -76,7 +67,31 @@ func TestMerge(t *testing.T) {
 }
 
 func TestSort(t *testing.T) {
-	err := SortKeyValueFile("target1")
+	fileList := []string{"target1", "target2", "target3"}
+	for _, file := range fileList {
+		err := sortKeyValueFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	util.RemoveTempFiles()
+}
+
+func TestDoMapTask(t *testing.T) {
+	err := doMapTask(coordinate.Task{
+		InputFiles:  []string{"/home/jean/6.5840/src/mr/coordinate/demo.txt", "/home/jean/6.5840/src/mr/coordinate/demo2.txt"},
+		TargetFiles: []string{"target1", "target2", "target3"},
+	}, mapf)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMap(t *testing.T) {
+	err := MapHandler(coordinate.Task{
+		InputFiles:  []string{"/home/jean/6.5840/src/mr/coordinate/demo.txt", "/home/jean/6.5840/src/mr/coordinate/demo2.txt"},
+		TargetFiles: []string{"target1", "target2", "target3"},
+	}, mapf)
 	if err != nil {
 		t.Fatal(err)
 	}
