@@ -7,6 +7,8 @@ import (
 	"net/rpc"
 
 	"6.5840/mr/coordinate"
+	"6.5840/mr/util"
+	"6.5840/mr/work"
 )
 
 //
@@ -37,6 +39,43 @@ func Worker(mapf func(string, string) []KeyValue,
 
 	// uncomment to send the Example RPC to the coordinator.
 	// CallExample()
+
+	mapFunction := func(filename string, content string) []work.KeyValue {
+		kvs := mapf(filename, content)
+		ret := make([]work.KeyValue, 0)
+		for _, kv := range kvs {
+			v := work.KeyValue{
+				Key:   kv.Key,
+				Value: kv.Value,
+			}
+			ret = append(ret, v)
+		}
+		return ret
+	}
+
+	workId := util.RandomTaskId()
+	for {
+		task, err := Acquire(workId)
+		if err != nil {
+			panic(err)
+		}
+		if task == nil {
+			continue
+		}
+
+		if task.Type == coordinate.MAP_TASK_TYPE {
+			work.MapHandler(*task, mapFunction)
+		} else if task.Type == coordinate.REDUCE_TASK_TYPE {
+			work.ReduceHandler(*task, reducef)
+		} else {
+			panic(fmt.Sprintf("invalid type %v", task))
+		}
+
+		err = Finish(workId, *task)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 }
 

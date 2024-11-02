@@ -49,6 +49,14 @@ func (c *Coordinator) Finish(args *FinishArgs, reply *FinishReply) error {
 	return nil
 }
 
+func (c *Coordinator) IsDone(args *IsDoneArgs, reply *IsDoneReply) error {
+	done := c.tm.Done()
+
+	reply.done = done
+
+	return nil
+}
+
 //
 // start a thread that listens for RPCs from worker.go
 //

@@ -45,6 +45,15 @@ type FinishArgs struct {
 type FinishReply struct {
 }
 
+type IsDoneArgs struct {
+	workerId string
+	taskId   string
+}
+
+type IsDoneReply struct {
+	done bool
+}
+
 // Cook up a unique-ish UNIX-domain socket name
 // in /var/tmp, for the coordinator.
 // Can't use the current directory since

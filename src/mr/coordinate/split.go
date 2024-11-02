@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	SplitSize = 128 * 1024
+	SPLIT_SIZE = 128 * 1024
 
-	BufferFlushSize = 128 * 1024
+	BUFFER_FLUSH_SIZE = 128 * 1024
 
 	MergeTempFormat = "mr-merge-temp-task%v-id%v"
 
@@ -66,7 +66,7 @@ func merge(files []string, taskId string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			if wr.Size() > BufferFlushSize {
+			if wr.Size() > BUFFER_FLUSH_SIZE {
 				err = wr.Flush()
 				if err != nil {
 					return "", err

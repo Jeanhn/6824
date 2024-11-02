@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	BLOCK_SIZE_LIMIT = 10
+	BLOCK_SIZE_LIMIT = 128 * 1024
 )
 
 type KeyValue struct {
