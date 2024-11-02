@@ -1,11 +1,14 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"hash/fnv"
 	"io"
 	"os"
 	"reflect"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -56,12 +59,17 @@ func I64ToString(i int64) string {
 }
 
 var tempFiles = make([]string, 0)
+var tempFileLock sync.Mutex = sync.Mutex{}
 
 func CollectTempFile(name string) {
+	tempFileLock.Lock()
+	defer tempFileLock.Unlock()
 	tempFiles = append(tempFiles, name)
 }
 
 func RemoveTempFiles() error {
+	tempFileLock.Lock()
+	defer tempFileLock.Unlock()
 	for _, file := range tempFiles {
 		err := os.Remove(file)
 		if err != nil {
@@ -97,4 +105,12 @@ func Ihash(key string) int {
 	h := fnv.New32a()
 	h.Write([]byte(key))
 	return int(h.Sum32() & 0x7fffffff)
+}
+
+func UnmarshalKeyAndValue(byts []byte) ([]string, error) {
+	ans := bytes.Split(byts, []byte{' '})
+	if len(ans) != 2 {
+		return nil, errors.New("UnmarshalKeyAndValue:wrong src input")
+	}
+	return []string{BytesToString(ans[0]), BytesToString(ans[1])}, nil
 }

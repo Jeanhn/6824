@@ -1,6 +1,9 @@
 package util
 
 import (
+	"bytes"
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -17,6 +20,33 @@ func TestB2S(t *testing.T) {
 	s := BytesToString(b)
 	b[0] = '9'
 	if s != "923" {
+		t.Fail()
+	}
+}
+
+func TestSplit(t *testing.T) {
+	s := "1 1"
+	arr := strings.Split(s, " ")
+	if len(arr) != 2 {
+		t.Fatal(fmt.Sprint(arr))
+	}
+
+	b := []byte(s)
+	bytesArr := bytes.Split(b, []byte(" "))
+	if len(bytesArr) != 2 {
+		t.Fatal(fmt.Sprint(bytesArr))
+	}
+
+	arr, err := UnmarshalKeyAndValue(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(bytesArr) != 2 {
+		t.Fatal(fmt.Sprint(arr))
+	}
+
+	bt := byte(' ')
+	if int(bt) != 32 {
 		t.Fail()
 	}
 }
