@@ -26,6 +26,11 @@ func mapf(filename string, contents string) []KeyValue {
 	return kva
 }
 
+func reducef(key string, values []string) string {
+	// return the number of occurrences of this word.
+	return strconv.Itoa(len(values))
+}
+
 func TestHeap(t *testing.T) {
 	kvs := make([]KeyValue, 0)
 	kvh := KeyValueHeap(kvs)
@@ -92,6 +97,17 @@ func TestMap(t *testing.T) {
 		InputFiles:  []string{"/home/jean/6.5840/src/mr/coordinate/demo.txt", "/home/jean/6.5840/src/mr/coordinate/demo2.txt"},
 		TargetFiles: []string{"target1", "target2", "target3"},
 	}, mapf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	util.RemoveTempFiles()
+}
+
+func TestReduce(t *testing.T) {
+	err := ReduceHandler(coordinate.Task{
+		InputFiles:  []string{"target1", "target2", "target3"},
+		TargetFiles: []string{"output1"},
+	}, reducef)
 	if err != nil {
 		t.Fatal(err)
 	}

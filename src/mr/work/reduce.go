@@ -3,6 +3,8 @@ package work
 import (
 	"bufio"
 	"container/heap"
+	"errors"
+	"fmt"
 	"os"
 
 	"6.5840/mr/coordinate"
@@ -104,42 +106,83 @@ func mergeSortedFiles(filenames []string, dest string) error {
 }
 
 func ReduceHandler(task coordinate.Task, reducef func(string, []string) string) error {
-	targetFiles := make([]*bufio.Writer, 0)
-	for _, filename := range task.TargetFiles {
-		f, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0666)
-		if err != nil {
-			return err
-		}
-		wr := bufio.NewWriter(f)
-		targetFiles = append(targetFiles, wr)
+	if len(task.TargetFiles) != 1 {
+		return errors.New("target output files count wrong")
 	}
+	targetFile, err := os.OpenFile(task.TargetFiles[0], os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	wr := bufio.NewWriter(targetFile)
 
-	for _, filename := range task.InputFiles {
-		f, err := os.Open(filename)
+	tempFileName := fmt.Sprintf(MergingFileFormat, task.Id)
+	mergeSortedFiles(task.InputFiles, tempFileName)
+
+	tempFile, err := os.Open(tempFileName)
+	if err != nil {
+		return err
+	}
+	util.CollectTempFile(tempFile.Name())
+	defer tempFile.Close()
+	sc := bufio.NewScanner(tempFile)
+	sc.Split(bufio.ScanLines)
+
+	currentKeyValue := make([]KeyValue, 0)
+
+	flushCurrent := func() error {
+		values := make([]string, 0)
+		for _, v := range currentKeyValue {
+			values = append(values, v.Value)
+		}
+		reduceValue := reducef(currentKeyValue[0].Key, values)
+		text := fmt.Sprintf("%v %v\r\n", currentKeyValue[0].Key, reduceValue)
+		_, err = wr.WriteString(text)
 		if err != nil {
 			return err
 		}
-		sc := bufio.NewScanner(f)
-		sc.Split(bufio.ScanLines)
-
+		if wr.Size() > BLOCK_SIZE_LIMIT {
+			err = wr.Flush()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	for sc.Scan() {
 		err = sc.Err()
 		if err != nil {
 			return err
 		}
-		for sc.Scan() {
-			err = sc.Err()
-			if err != nil {
-				return err
-			}
-
-			byts := sc.Bytes()
-			ukv, err := util.UnmarshalKeyAndValue(byts)
-			if err != nil {
-				return err
-			}
-			kv := KeyValue{}
-			kv.from(ukv)
+		line := sc.Bytes()
+		ukv, err := util.UnmarshalKeyAndValue(line)
+		if err != nil {
+			return err
 		}
+		kv := KeyValue{}
+		kv.from(ukv)
+		if len(currentKeyValue) != 0 {
+			ckv := currentKeyValue[0]
+			if ckv.Key != kv.Key {
+				err = flushCurrent()
+				if err != nil {
+					return err
+				}
+				currentKeyValue = make([]KeyValue, 0)
+			}
+		}
+		currentKeyValue = append(currentKeyValue, kv)
+	}
+
+	if len(currentKeyValue) != 0 {
+		err = flushCurrent()
+		if err != nil {
+			return err
+		}
+	}
+
+	err = wr.Flush()
+	if err != nil {
+		return err
 	}
 	return nil
 }
