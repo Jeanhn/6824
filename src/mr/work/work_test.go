@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"6.5840/mr/coordinate"
+	"6.5840/mr/util"
 )
 
 func mapf(filename string, contents string) []KeyValue {
@@ -72,4 +73,12 @@ func TestMerge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestSort(t *testing.T) {
+	err := SortKeyValueFile("target1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	util.RemoveTempFiles()
 }

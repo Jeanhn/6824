@@ -81,7 +81,6 @@ func SortKeyValueFile(filename string) error {
 		}
 
 	}
-	defer util.RemoveTempFiles()
 
 	err = allocateAndSort()
 	if err != nil {
