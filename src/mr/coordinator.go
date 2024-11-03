@@ -39,6 +39,9 @@ func (c *Coordinator) Acquire(args *AcquireArgs, reply *AcquireReply) error {
 	}
 	reply.Task = task
 	reply.WorkerId = args.WorkerId
+
+	log.Default().Printf("Coordinator.Acquire, args:%v, reply:%v\n", args, reply)
+
 	return nil
 }
 
@@ -47,6 +50,8 @@ func (c *Coordinator) Finish(args *FinishArgs, reply *FinishReply) error {
 	if err != nil {
 		return err
 	}
+	log.Default().Printf("Coordinator.Finish, args:%v, reply:%v\n", args, reply)
+
 	return nil
 }
 
@@ -55,6 +60,7 @@ func (c *Coordinator) IsDone(args *IsDoneArgs, reply *IsDoneReply) error {
 
 	reply.IsDone = done
 
+	log.Default().Printf("Coordinator.IsDone, args:%v, reply:%v\n", args, reply)
 	return nil
 }
 
@@ -97,15 +103,20 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 
 	// split the input first
 	defer util.FlushLogs()
-	defer util.RemoveTempFiles()
+	// defer util.RemoveTempFiles()
+
+	log.Default().Printf("MakeCoordinator start, files:%v, nReduce:%v\n", files, nReduce)
 
 	taskId := util.RandomTaskId()
 	se, err := coordinate.NewSplitExecutor(files, coordinate.SPLIT_SIZE, taskId)
 	if err != nil {
+		log.Default().Printf("MakeCoordinator error:%v\n", err)
 		panic(err)
 	}
 
-	for ok, err := se.Iterate(); ok && err == nil; ok, err = se.Iterate() {
+	ok, err := se.Iterate()
+	for ok && err == nil {
+		ok, err = se.Iterate()
 	}
 	if err != nil {
 		panic(err)

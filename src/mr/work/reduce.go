@@ -22,6 +22,7 @@ func mergeSortedFiles(filenames []string, dest string) error {
 		if err != nil {
 			return err
 		}
+		defer f.Close()
 		sc := bufio.NewScanner(f)
 		sc.Split(bufio.ScanLines)
 		fileReaders = append(fileReaders, sc)
@@ -76,13 +77,13 @@ func mergeSortedFiles(filenames []string, dest string) error {
 		if len(keyValueIndex[kv]) == 0 {
 			delete(keyValueIndex, kv)
 		}
-		var nextLine []byte
+
 		if fileReaders[index].Scan() {
 			err = fileReaders[index].Err()
 			if err != nil {
 				return err
 			}
-			nextLine = fileReaders[index].Bytes()
+			nextLine := fileReaders[index].Bytes()
 			ukv, err := util.UnmarshalKeyAndValue(nextLine)
 			if err != nil {
 				return err
@@ -122,6 +123,7 @@ func ReduceHandler(task coordinate.Task, reducef func(string, []string) string) 
 	if err != nil {
 		return err
 	}
+	defer tempFile.Close()
 	util.CollectTempFile(tempFile.Name())
 	defer tempFile.Close()
 	sc := bufio.NewScanner(tempFile)
