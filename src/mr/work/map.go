@@ -72,6 +72,7 @@ func sortKeyValueFile(filename string) error {
 			if err != nil {
 				return err
 			}
+			tempSortedFiles = append(tempSortedFiles, tempFile)
 			util.CollectTempFile(tempFile)
 			kvs = make([]KeyValue, 0)
 			kvSize = 0
@@ -84,10 +85,14 @@ func sortKeyValueFile(filename string) error {
 		if err != nil {
 			return err
 		}
+		tempSortedFiles = append(tempSortedFiles, tempFile)
 		util.CollectTempFile(tempFile)
 	}
 
-	mergeSortedFiles(tempSortedFiles, filename)
+	err = mergeSortedFiles(tempSortedFiles, filename)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
