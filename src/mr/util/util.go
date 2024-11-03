@@ -9,7 +9,6 @@ import (
 	"hash/fnv"
 	"io"
 	"os"
-	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -95,24 +94,6 @@ func RemoveTempFiles() error {
 	return nil
 }
 
-func BytesToString(byts []byte) string {
-	bh := *(*reflect.SliceHeader)(unsafe.Pointer(&byts))
-	sh := reflect.StringHeader{
-		Data: bh.Data,
-		Len:  bh.Len,
-	}
-	return *(*string)(unsafe.Pointer(&sh))
-}
-
-func StringToBytes(s string) []byte {
-	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := reflect.SliceHeader{
-		Data: sh.Data,
-		Len:  sh.Len,
-	}
-	return *(*[]byte)(unsafe.Pointer(&bh))
-}
-
 func RandomTaskId() string {
 	return "mr-task-" + I64ToString(time.Now().Unix())
 }
@@ -128,7 +109,7 @@ func UnmarshalKeyAndValue(byts []byte) ([]string, error) {
 	if len(ans) != 2 {
 		return nil, errors.New("UnmarshalKeyAndValue:wrong src input")
 	}
-	return []string{BytesToString(ans[0]), BytesToString(ans[1])}, nil
+	return []string{string(ans[0]), string(ans[1])}, nil
 }
 
 var localId int64 = 0
@@ -160,3 +141,5 @@ func FlushLogs() error {
 	defer logMutex.Unlock()
 	return logFile.Flush()
 }
+
+//TODO remove all ByteToString

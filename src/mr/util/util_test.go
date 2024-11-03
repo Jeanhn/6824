@@ -15,15 +15,6 @@ func TestItoa(t *testing.T) {
 	}
 }
 
-func TestB2S(t *testing.T) {
-	b := []byte("123")
-	s := BytesToString(b)
-	b[0] = '9'
-	if s != "923" {
-		t.Fail()
-	}
-}
-
 func TestSplit(t *testing.T) {
 	s := "1 1"
 	arr := strings.Split(s, " ")

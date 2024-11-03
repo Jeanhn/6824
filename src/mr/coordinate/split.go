@@ -126,7 +126,7 @@ func (se *SplitExecutor) iterate() ([]string, error) {
 		line := se.sc.Bytes()
 		line = append(line, "\r\n"...)
 		cacheSize += len(line)
-		cache = append(cache, util.BytesToString(line))
+		cache = append(cache, string(line))
 
 		if cacheSize > se.blockSize {
 			break

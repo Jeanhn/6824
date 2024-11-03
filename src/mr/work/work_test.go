@@ -72,14 +72,14 @@ func TestMerge(t *testing.T) {
 }
 
 func TestSort(t *testing.T) {
-	fileList := []string{"target1", "target2", "target3"}
+	fileList := []string{"output"}
 	for _, file := range fileList {
 		err := sortKeyValueFile(file)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	util.RemoveTempFiles()
+	// util.RemoveTempFiles()
 }
 
 func TestDoMapTask(t *testing.T) {
@@ -112,4 +112,17 @@ func TestReduce(t *testing.T) {
 		t.Fatal(err)
 	}
 	util.RemoveTempFiles()
+}
+
+func TestCase(t *testing.T) {
+	defer util.RemoveTempFiles()
+	inputFiles := []string{"/home/jean/6.5840/src/main/pg-being_ernest.txt"}
+	targetFiles := []string{"output"}
+	err := MapHandler(coordinate.Task{
+		InputFiles:  inputFiles,
+		TargetFiles: targetFiles,
+	}, mapf)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

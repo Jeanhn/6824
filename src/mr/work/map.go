@@ -14,6 +14,29 @@ const (
 	SortFileFormat = "mr-sort-file-prefix-id%v"
 )
 
+func flushKeyValues(kvs []KeyValue) (string, error) {
+	tempName := fmt.Sprintf(SortFileFormat, util.LocalIncreaseId())
+	f, err := os.OpenFile(tempName, os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	wr := bufio.NewWriter(f)
+	util.CollectTempFile(tempName)
+	sort.Sort(KeyValueArray(kvs))
+	for _, kv := range kvs {
+		_, err = wr.WriteString(kv.fmt())
+		if err != nil {
+			return "", err
+		}
+	}
+	err = wr.Flush()
+	if err != nil {
+		return "", err
+	}
+	return tempName, nil
+}
+
 func sortKeyValueFile(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -27,33 +50,6 @@ func sortKeyValueFile(filename string) error {
 	kvs := make([]KeyValue, 0)
 	kvSize := 0
 	tempSortedFiles := make([]string, 0)
-
-	var allocateAndSort func() error = func() error {
-		tempName := fmt.Sprintf(SortFileFormat, util.LocalIncreaseId())
-		f, err := os.OpenFile(tempName, os.O_CREATE|os.O_RDWR, 0666)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		wr := bufio.NewWriter(f)
-		util.CollectTempFile(tempName)
-		tempSortedFiles = append(tempSortedFiles, tempName)
-		sort.Sort(KeyValueArray(kvs))
-		for _, kv := range kvs {
-			_, err = wr.WriteString(kv.fmt())
-			if err != nil {
-				return err
-			}
-		}
-		err = wr.Flush()
-		if err != nil {
-			return err
-		}
-
-		kvs = make([]KeyValue, 0)
-		kvSize = 0
-		return nil
-	}
 
 	for sc.Scan() {
 		err = sc.Err()
@@ -72,17 +68,23 @@ func sortKeyValueFile(filename string) error {
 		kvs = append(kvs, kv)
 
 		if kvSize > BLOCK_SIZE_LIMIT {
-			err = allocateAndSort()
+			tempFile, err := flushKeyValues(kvs)
 			if err != nil {
 				return err
 			}
+			util.CollectTempFile(tempFile)
+			kvs = make([]KeyValue, 0)
+			kvSize = 0
 		}
 
 	}
 
-	err = allocateAndSort()
-	if err != nil {
-		return err
+	if len(kvs) != 0 {
+		tempFile, err := flushKeyValues(kvs)
+		if err != nil {
+			return err
+		}
+		util.CollectTempFile(tempFile)
 	}
 
 	mergeSortedFiles(tempSortedFiles, filename)
@@ -117,7 +119,7 @@ func doMapTask(task coordinate.Task, mapf func(string, string) []KeyValue) error
 				return err
 			}
 			byts := sc.Bytes()
-			kvs := mapf(filename, util.BytesToString(byts))
+			kvs := mapf(filename, string(byts))
 
 			for _, kv := range kvs {
 				n := ihash(kv.Key) % len(task.TargetFiles)
