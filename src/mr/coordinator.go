@@ -42,6 +42,13 @@ func (c *Coordinator) Acquire(args *AcquireArgs, reply *AcquireReply) error {
 
 	log.Default().Printf("Coordinator.Acquire, args:%v, reply:%v\n", args, reply)
 
+	if task != nil {
+		go func() {
+			time.Sleep(time.Second * 5)
+			c.tm.Timeout(task.Id)
+		}()
+	}
+
 	return nil
 }
 

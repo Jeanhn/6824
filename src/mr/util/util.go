@@ -22,7 +22,7 @@ var logMutex sync.Mutex = sync.Mutex{}
 const LOG_SIZE int = 128 * 1024
 
 func init() {
-	f, err := os.OpenFile("logfile.txt", os.O_CREATE|os.O_RDWR, 0666)
+	f, err := os.OpenFile(fmt.Sprintf("logfile%v.txt", os.Getpid()), os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
 	}
