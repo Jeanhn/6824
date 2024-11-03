@@ -22,7 +22,6 @@ func flushKeyValues(kvs []KeyValue, taskId string) (string, error) {
 	}
 	defer f.Close()
 	wr := bufio.NewWriter(f)
-	util.CollectTempFile(tempName)
 	sort.Sort(KeyValueArray(kvs))
 	for _, kv := range kvs {
 		_, err = wr.WriteString(kv.fmt())

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -83,6 +84,7 @@ func CollectTempFile(names ...string) {
 	for _, name := range names {
 		_, ok := fileRecords[name]
 		if ok {
+			log.Default().Printf("CollectTempFile repeated file collected: %v\r\n", name)
 			continue
 		}
 		tempFiles = append(tempFiles, name)
