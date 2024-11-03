@@ -13,7 +13,7 @@ const (
 
 	BUFFER_FLUSH_SIZE = 128 * 1024
 
-	MergeTempFormat = "mr-merge-temp-task%v-id%v"
+	MergeTempFormat = "mr-merge-temp-task%v"
 
 	SplitTempFormat = "mr-split-temp-task%v-shard%v"
 
@@ -88,6 +88,7 @@ func NewSplitExecutor(files []string, blockSize int, taskId string) (*SplitExecu
 	if err != nil {
 		return nil, err
 	}
+	util.CollectTempFile(mergeFile)
 
 	mf, err := os.Open(mergeFile)
 	if err != nil {
@@ -154,12 +155,14 @@ func (se *SplitExecutor) Iterate() (bool, error) {
 
 	i := util.LocalIncreaseId()
 	filename := fmt.Sprintf(SplitTempFormat, se.taskId, i)
+	util.CollectTempFile(filename)
 	se.splitFiles = append(se.splitFiles, filename)
 
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return false, err
 	}
+	defer f.Close()
 
 	for _, line := range text {
 		_, err = f.WriteString(line)

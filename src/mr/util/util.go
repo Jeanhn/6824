@@ -1,9 +1,11 @@
 package util
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash/fnv"
 	"io"
 	"os"
@@ -13,6 +15,19 @@ import (
 	"time"
 	"unsafe"
 )
+
+var logFile *bufio.Writer
+var logMutex sync.Mutex = sync.Mutex{}
+
+const LOG_SIZE int = 128 * 1024
+
+func init() {
+	f, err := os.OpenFile("logfile.txt", os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
+	}
+	logFile = bufio.NewWriter(f)
+}
 
 func WriteTo(src interface{}, file io.Writer) error {
 	enc := json.NewEncoder(file)
@@ -121,4 +136,27 @@ var localId int64 = 0
 func LocalIncreaseId() int64 {
 	n := atomic.AddInt64(&localId, 1)
 	return n - 1
+}
+
+func Log(format string, args ...interface{}) error {
+	logf := fmt.Sprintf(format, args...)
+	logMutex.Lock()
+	defer logMutex.Unlock()
+	_, err := logFile.WriteString(logf)
+	if err != nil {
+		return err
+	}
+	if logFile.Size() > LOG_SIZE {
+		err = logFile.Flush()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func FlushLogs() error {
+	logMutex.Lock()
+	defer logMutex.Unlock()
+	return logFile.Flush()
 }

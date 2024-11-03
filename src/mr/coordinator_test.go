@@ -25,7 +25,7 @@ func TestMakeAndServe(t *testing.T) {
 			wg.Wait()
 			for {
 				acquire := AcquireArgs{
-					workerId: "yeah",
+					WorkerId: "yeah",
 				}
 				acquireReply := AcquireReply{}
 
@@ -34,13 +34,13 @@ func TestMakeAndServe(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if acquireReply.task == nil {
+				if acquireReply.Task == nil {
 					break
 				}
 
 				finish := FinishArgs{
-					workerId: "yeah",
-					task:     *acquireReply.task,
+					WorkerId: "yeah",
+					Task:     *acquireReply.Task,
 				}
 				finishReply := FinishReply{}
 
@@ -49,7 +49,7 @@ func TestMakeAndServe(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if acquireReply.task.Type == 1 {
+				if acquireReply.Task.Type == 1 {
 					atomic.AddInt32(&m, 1)
 				} else {
 					atomic.AddInt32(&r, 1)

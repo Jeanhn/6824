@@ -29,29 +29,29 @@ type ExampleReply struct {
 // Add your RPC definitions here.
 
 type AcquireArgs struct {
-	workerId string
+	WorkerId string
 }
 
 type AcquireReply struct {
-	workerId string
-	task     *coordinate.Task
+	WorkerId string
+	Task     *coordinate.Task
 }
 
 type FinishArgs struct {
-	workerId string
-	task     coordinate.Task
+	WorkerId string
+	Task     coordinate.Task
 }
 
 type FinishReply struct {
 }
 
 type IsDoneArgs struct {
-	workerId string
-	taskId   string
+	WorkerId string
+	TaskId   string
 }
 
 type IsDoneReply struct {
-	done bool
+	IsDone bool
 }
 
 // Cook up a unique-ish UNIX-domain socket name

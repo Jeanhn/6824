@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
+	"time"
 
 	"6.5840/mr/coordinate"
 	"6.5840/mr/util"
@@ -36,13 +37,13 @@ func (c *Coordinator) Acquire(args *AcquireArgs, reply *AcquireReply) error {
 	if err != nil {
 		return err
 	}
-	reply.task = task
-	reply.workerId = args.workerId
+	reply.Task = task
+	reply.WorkerId = args.WorkerId
 	return nil
 }
 
 func (c *Coordinator) Finish(args *FinishArgs, reply *FinishReply) error {
-	err := c.tm.Finish(args.task.Id)
+	err := c.tm.Finish(args.Task.Id)
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,7 @@ func (c *Coordinator) Finish(args *FinishArgs, reply *FinishReply) error {
 func (c *Coordinator) IsDone(args *IsDoneArgs, reply *IsDoneReply) error {
 	done := c.tm.Done()
 
-	reply.done = done
+	reply.IsDone = done
 
 	return nil
 }
@@ -95,8 +96,11 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 	// Your code here.
 
 	// split the input first
+	defer util.FlushLogs()
+	defer util.RemoveTempFiles()
+
 	taskId := util.RandomTaskId()
-	se, err := coordinate.NewSplitExecutor(files, 50, taskId)
+	se, err := coordinate.NewSplitExecutor(files, coordinate.SPLIT_SIZE, taskId)
 	if err != nil {
 		panic(err)
 	}
@@ -121,5 +125,9 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 	}
 
 	c.server()
+
+	for !c.Done() {
+		time.Sleep(time.Second)
+	}
 	return &c
 }

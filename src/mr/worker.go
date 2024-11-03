@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"log"
 	"net/rpc"
+	"time"
 
 	"6.5840/mr/coordinate"
 	"6.5840/mr/util"
@@ -39,6 +40,9 @@ func Worker(mapf func(string, string) []KeyValue,
 
 	// uncomment to send the Example RPC to the coordinator.
 	// CallExample()
+
+	defer util.FlushLogs()
+	defer util.RemoveTempFiles()
 
 	mapFunction := func(filename string, content string) []work.KeyValue {
 		kvs := mapf(filename, content)
@@ -75,6 +79,13 @@ func Worker(mapf func(string, string) []KeyValue,
 		if err != nil {
 			panic(err)
 		}
+
+		isDone, err := IsDone(workId, task.ProjectId)
+		if isDone {
+			break
+		}
+
+		time.Sleep(time.Millisecond * 200)
 	}
 
 }
@@ -133,7 +144,7 @@ func call(rpcname string, args interface{}, reply interface{}) error {
 
 func Acquire(workerId string) (*coordinate.Task, error) {
 	request := AcquireArgs{
-		workerId: workerId,
+		WorkerId: workerId,
 	}
 	response := AcquireReply{}
 
@@ -141,13 +152,13 @@ func Acquire(workerId string) (*coordinate.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	return response.task, nil
+	return response.Task, nil
 }
 
 func Finish(workerId string, task coordinate.Task) error {
 	request := FinishArgs{
-		workerId: workerId,
-		task:     task,
+		WorkerId: workerId,
+		Task:     task,
 	}
 	response := FinishReply{}
 	err := call("Coordinator.Finish", &request, &response)
@@ -156,4 +167,17 @@ func Finish(workerId string, task coordinate.Task) error {
 	}
 
 	return nil
+}
+
+func IsDone(workerId, taskId string) (bool, error) {
+	request := IsDoneArgs{
+		WorkerId: workerId,
+		TaskId:   taskId,
+	}
+	response := IsDoneReply{}
+	err := call("Coordinator.IsDone", &request, &response)
+	if err != nil {
+		return true, err
+	}
+	return response.IsDone, nil
 }
