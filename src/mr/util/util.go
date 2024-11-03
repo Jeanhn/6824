@@ -74,12 +74,19 @@ func I64ToString(i int64) string {
 }
 
 var tempFiles = make([]string, 0)
+var fileRecords = make(map[string]struct{})
 var tempFileLock sync.Mutex = sync.Mutex{}
 
-func CollectTempFile(name string) {
+func CollectTempFile(names ...string) {
 	tempFileLock.Lock()
 	defer tempFileLock.Unlock()
-	tempFiles = append(tempFiles, name)
+	for _, name := range names {
+		_, ok := fileRecords[name]
+		if ok {
+			continue
+		}
+		tempFiles = append(tempFiles, name)
+	}
 }
 
 func RemoveTempFiles() error {
@@ -88,8 +95,9 @@ func RemoveTempFiles() error {
 	for _, file := range tempFiles {
 		err := os.Remove(file)
 		if err != nil {
-			return err
+			panic(err)
 		}
+		delete(fileRecords, file)
 	}
 	return nil
 }

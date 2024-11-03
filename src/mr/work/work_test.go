@@ -74,7 +74,7 @@ func TestMerge(t *testing.T) {
 func TestSort(t *testing.T) {
 	fileList := []string{"output"}
 	for _, file := range fileList {
-		err := sortKeyValueFile(file)
+		err := sortKeyValueFile(file, "task0")
 		if err != nil {
 			t.Fatal(err)
 		}

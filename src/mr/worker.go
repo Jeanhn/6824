@@ -69,6 +69,7 @@ func Worker(mapf func(string, string) []KeyValue,
 
 		if task.Type == coordinate.MAP_TASK_TYPE {
 			work.MapHandler(*task, mapFunction)
+			util.CollectTempFile(task.TargetFiles...)
 		} else if task.Type == coordinate.REDUCE_TASK_TYPE {
 			work.ReduceHandler(*task, reducef)
 		} else {

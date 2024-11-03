@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	SortFileFormat = "mr-sort-file-prefix-id%v"
+	SortFileFormat = "mr-sort-file-prefix-task%v-id%v"
 )
 
-func flushKeyValues(kvs []KeyValue) (string, error) {
-	tempName := fmt.Sprintf(SortFileFormat, util.LocalIncreaseId())
+func flushKeyValues(kvs []KeyValue, taskId string) (string, error) {
+	tempName := fmt.Sprintf(SortFileFormat, taskId, util.LocalIncreaseId())
 	f, err := os.OpenFile(tempName, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return "", err
@@ -37,7 +37,7 @@ func flushKeyValues(kvs []KeyValue) (string, error) {
 	return tempName, nil
 }
 
-func sortKeyValueFile(filename string) error {
+func sortKeyValueFile(filename, taskId string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func sortKeyValueFile(filename string) error {
 		kvs = append(kvs, kv)
 
 		if kvSize > BLOCK_SIZE_LIMIT {
-			tempFile, err := flushKeyValues(kvs)
+			tempFile, err := flushKeyValues(kvs, taskId)
 			if err != nil {
 				return err
 			}
@@ -81,7 +81,7 @@ func sortKeyValueFile(filename string) error {
 	}
 
 	if len(kvs) != 0 {
-		tempFile, err := flushKeyValues(kvs)
+		tempFile, err := flushKeyValues(kvs, taskId)
 		if err != nil {
 			return err
 		}
@@ -157,7 +157,7 @@ func MapHandler(task coordinate.Task, mapf func(string, string) []KeyValue) erro
 		return err
 	}
 	for _, filename := range task.TargetFiles {
-		err = sortKeyValueFile(filename)
+		err = sortKeyValueFile(filename, util.I64ToString(task.Id))
 		if err != nil {
 			return err
 		}

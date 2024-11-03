@@ -124,7 +124,7 @@ func ReduceHandler(task coordinate.Task, reducef func(string, []string) string) 
 		return err
 	}
 	defer tempFile.Close()
-	util.CollectTempFile(tempFile.Name())
+	util.CollectTempFile(tempFileName)
 	defer tempFile.Close()
 	sc := bufio.NewScanner(tempFile)
 	sc.Split(bufio.ScanLines)

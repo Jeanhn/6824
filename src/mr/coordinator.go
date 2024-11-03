@@ -103,7 +103,7 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 
 	// split the input first
 	defer util.FlushLogs()
-	// defer util.RemoveTempFiles()
+	defer util.RemoveTempFiles()
 
 	log.Default().Printf("MakeCoordinator start, files:%v, nReduce:%v\n", files, nReduce)
 
