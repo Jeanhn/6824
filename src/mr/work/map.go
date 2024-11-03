@@ -106,6 +106,7 @@ func doMapTask(task coordinate.Task, mapf func(string, string) []KeyValue) error
 		if err != nil {
 			return err
 		}
+		defer f.Close()
 
 		sc := bufio.NewScanner(f)
 		sc.Split(bufio.ScanLines)
